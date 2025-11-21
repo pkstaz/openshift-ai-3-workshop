@@ -4,12 +4,22 @@
 
 Before starting this workshop, ensure you have:
 
-- Model as a Service (MaaS) enabled in your OpenShift AI cluster
+- **OpenShift cluster** (4.19.9+) with `oc`/`kubectl` access
+- **RHOAI 3.0+** or **ODH 3.0+** installed
+- **RHCL 1.2+** installed (must be in `kuadrant-system` namespace)
+- **Cluster admin** or equivalent permissions
+- **Required tools:**
+  - `oc` (OpenShift CLI)
+  - `kubectl`
+  - `jq`
+  - `kustomize` (v5.7.0+)
 - A deployed model using LLM-D (from Workshop 02)
 - Access to the OpenShift AI Console
 - Project namespace with appropriate permissions
 
 **⚠️ IMPORTANT:** MaaS must be enabled in the `OdhDashboardConfig` custom resource. If MaaS is not available in the dashboard, you need to enable it first (see Step 0 below).
+
+**Reference:** For more detailed installation instructions, refer to the [official MaaS documentation](https://opendatahub-io.github.io/maas-billing/latest/quickstart/).
 
 ## Set Environment Variables
 
@@ -109,19 +119,65 @@ oc apply --server-side=true \
 
 **Note:** This command uses kustomize to build the deployment manifests from the official MaaS billing repository. The source for installation instructions can be found at: https://opendatahub-io.github.io/maas-billing/latest/quickstart/
 
-Verify the MaaS API objects were deployed:
-
+**Alternative:** If you prefer an automated deployment, you can use the official deployment script from the [MaaS billing repository](https://github.com/opendatahub-io/maas-billing):
 ```bash
-oc get all -n maas-api
+git clone https://github.com/opendatahub-io/maas-billing.git
+cd maas-billing
+./deployment/scripts/deploy-openshift.sh
 ```
 
-Wait for all pods to be in `Running` state:
+### 3.1 Verify MaaS Deployment
 
-```bash
-oc get pods -n maas-api -w
-```
+The deployment creates several core resources. Verify they were created successfully:
 
-Press `Ctrl+C` once all pods are running.
+1. **Check namespaces:**
+
+   ```bash
+   oc get ns | grep -E "maas-api|kuadrant|kserve|opendatahub"
+   ```
+
+2. **Check Gateway status:**
+
+   ```bash
+   oc get gateway -n openshift-ingress maas-default-gateway
+   ```
+
+   The Gateway should show `PROGRAMMED: True` when ready.
+
+3. **Check HTTPRoutes:**
+
+   ```bash
+   oc get httproute maas-api-route -n maas-api
+   ```
+
+4. **Check policies:**
+
+   ```bash
+   oc get authpolicy -A | grep maas
+   oc get tokenratelimitpolicy -A | grep maas
+   oc get ratelimitpolicy -A | grep maas
+   ```
+
+5. **Check MaaS API pods and service:**
+
+   ```bash
+   oc get pods -n maas-api
+   oc get svc -n maas-api
+   ```
+
+   Wait for all pods to be in `Running` state:
+
+   ```bash
+   oc get pods -n maas-api -w
+   ```
+
+   Press `Ctrl+C` once all pods are running.
+
+6. **Check Kuadrant operators:**
+
+   ```bash
+   oc get pods -n kuadrant-system | grep -E "kuadrant|authorino|limitador"
+   ```
 
 ## Step 4: Configure Gateway AuthPolicy
 
@@ -289,5 +345,76 @@ Test the MaaS API configuration by obtaining an authentication token:
      echo "Response: $TOKEN_RESPONSE"
    fi
    ```
+
+## Step 8: Update Existing Models to Use MaaS Gateway (Optional)
+
+If you have existing models deployed using LLM-D that you want to expose through MaaS, you need to update the `LLMInferenceService` to reference the `maas-default-gateway`.
+
+**Note:** This step is only needed if you want to migrate existing models to use MaaS. New models deployed through the dashboard with MaaS enabled will automatically use the MaaS gateway.
+
+### 8.1 Update LLMInferenceService Gateway Reference
+
+Update your existing `LLMInferenceService` to use the `maas-default-gateway`:
+
+```bash
+oc patch llminferenceservice ${SERVICE_NAME} -n ${PROJECT_NAME} --type='json' -p='[
+  {
+    "op": "add",
+    "path": "/spec/gateway/refs/-",
+    "value": {
+      "name": "maas-default-gateway",
+      "namespace": "openshift-ingress"
+    }
+  }
+]'
+```
+
+**Alternative:** You can also edit the `LLMInferenceService` directly:
+
+```bash
+oc edit llminferenceservice ${SERVICE_NAME} -n ${PROJECT_NAME}
+```
+
+Add or update the `gateway.refs` section:
+
+```yaml
+apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  name: ${SERVICE_NAME}
+spec:
+  gateway:
+    refs:
+      - name: maas-default-gateway
+        namespace: openshift-ingress
+```
+
+### 8.2 Verify Model is Accessible via MaaS
+
+After updating the gateway reference, verify your model is accessible through the MaaS gateway:
+
+```bash
+# Test model endpoint through MaaS
+curl -X GET "https://maas.${CLUSTER_DOMAIN}/${PROJECT_NAME}/${SERVICE_NAME}/v1/models" \
+  -H "Authorization: Bearer ${TOKEN}"
+```
+
+**Note:** Replace `${TOKEN}` with the token obtained in Step 7.
+
+## Verification Checklist
+
+After completing all steps, verify your MaaS deployment:
+
+- [ ] GatewayClass `openshift-default` created
+- [ ] Namespace `maas-api` created
+- [ ] MaaS API objects deployed
+- [ ] Gateway `maas-default-gateway` shows `PROGRAMMED: True`
+- [ ] HTTPRoute `maas-api-route` created
+- [ ] AuthPolicy `maas-api-auth-policy` configured with correct audience
+- [ ] `gateway-auth-policy` updated to only apply to `openshift-ai-inference` Gateway
+- [ ] Required pods restarted (`odh-model-controller`, `kuadrant-operator-controller-manager`)
+- [ ] MaaS API pods running in `maas-api` namespace
+- [ ] Token obtained successfully from MaaS API
+- [ ] (Optional) Existing models updated to use `maas-default-gateway`
 
 

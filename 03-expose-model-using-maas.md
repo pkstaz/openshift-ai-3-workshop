@@ -33,7 +33,7 @@ export PROJECT_NAME="ai-shared-project"  # Replace with your actual project name
 export CLUSTER_DOMAIN=$(oc get ingresses.config/cluster -o jsonpath='{.spec.domain}')
 
 # Set your model service name (from your deployed model)
-export SERVICE_NAME="gpt-oss-20b"        # Replace with your actual service name
+export SERVICE_NAME="llama-31-8b"        # Replace with your actual service name
 ```
 
 **Verify your environment variables are set correctly:**

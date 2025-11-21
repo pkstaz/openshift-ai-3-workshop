@@ -21,7 +21,7 @@ export PROJECT_NAME="ai-shared-project"  # Replace with your actual project name
 export CLUSTER_DOMAIN=$(oc get ingresses.config/cluster -o jsonpath='{.spec.domain}')
 
 # Set your service name (you'll know this after creating the connection in Step 7)
-export SERVICE_NAME="gpt-oss-20b"        # Replace with your actual service name
+export SERVICE_NAME="llama-31-8b"        # Replace with your actual service name
 ```
 
 **Verify your environment variables are set correctly:**
@@ -228,11 +228,11 @@ oc get authorino -n kuadrant-system -o yaml
 - Select: `URI - v1`
 
 **Connection name:**
-- Enter: `gpt-oss-20b`
+- Enter: `llama-31-8b`
 
 **Connection URI:**
 ```
-oci://registry.redhat.io/rhelai1/modelcar-gpt-oss-20b:1.5
+oci://registry.redhat.io/rhelai1/modelcar-llama-3-1-8b-instruct-fp8-dynamic:1.5
 ```
 
 ## Step 8: Deploy LLM Inference Service
@@ -248,7 +248,7 @@ To deploy a Generative AI model (such as an LLM) using an **existing Connection*
 1. In the **Deploy Model** wizard, under **Model Location**, select **Existing Connection**.
 2. For **Connection**, choose:  
    ```
-   gpt-oss-20b
+   llama-31-8b
    ```
 3. For **Model type**, select:  
    ```
@@ -264,7 +264,7 @@ To deploy a Generative AI model (such as an LLM) using an **existing Connection*
 
 Set the following options in the **Deploy Model** wizard:
 
-- **Model deployment name:** `gpt-oss-20b`
+- **Model deployment name:** `llama-31-8b`
 - **Hardware profile:** `gpu-profile`
 - **Serving runtime:** `Distributed Inference Server with llm-d`
 - **Number of replicas to deploy:** `1`

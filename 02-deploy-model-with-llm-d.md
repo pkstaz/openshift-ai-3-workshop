@@ -36,23 +36,84 @@ echo "SERVICE_NAME: $SERVICE_NAME"
 
 ## Step 1: Configure Gateway for Inference Service
 
+### 1.0 Download Gateway from Cluster (if it exists)
+
+**What we're doing:** If the Gateway `openshift-ai-inference` already exists in your cluster, we'll download its current configuration to preserve any existing settings (such as allowed namespaces or custom configurations) before making modifications. This ensures we don't lose any existing configuration when updating the Gateway.
+
+**Download the Gateway configuration:**
+
+```bash
+oc get gateway openshift-ai-inference -n openshift-ingress -o yaml > deploy/02-llm-d/gateway.yaml
+```
+
+**What you'll see:** After running this command, the Gateway configuration will be saved to `deploy/02-llm-d/gateway.yaml`. The file will contain the complete Gateway resource definition, including:
+
+- Gateway metadata (name, namespace, labels)
+- GatewayClass reference
+- Listener configuration with allowed routes
+- TLS certificate references
+- Hostname configuration
+
+**Example of what the downloaded file will look like:**
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  labels:
+    istio.io/rev: openshift-gateway
+  name: openshift-ai-inference
+  namespace: openshift-ingress
+spec:
+  gatewayClassName: openshift-ai-inference
+  listeners:
+    - allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchExpressions:
+              - key: kubernetes.io/metadata.name
+                operator: In
+                values:
+                  - openshift-ingress
+                  - redhat-ods-applications
+                  # Your existing namespaces will be listed here
+      hostname: inference-gateway.apps.your-cluster-domain.com
+      name: https
+      port: 443
+      protocol: HTTPS
+      tls:
+        certificateRefs:
+          - group: ''
+            kind: Secret
+            name: default-gateway-tls
+        mode: Terminate
+```
+
+**Note:** If the Gateway doesn't exist yet, you can skip this step and proceed to edit the template file in the repository. The template file already contains the basic structure, and you'll just need to replace the placeholders in the next step.
+
 ### 1.1 Edit Gateway Configuration
 
-Before applying the Gateway, edit `deploy/02-llm-d/gateway.yaml` and replace the placeholders:
+Before applying the Gateway, edit `deploy/02-llm-d/gateway.yaml` and configure it based on your scenario:
 
-1. **Replace `<YOUR_PROJECT_NAME>`** with your project namespace (e.g., `ai-shared-project`)
-2. **Replace `<CLUSTER_DOMAIN>`** with your cluster domain (use the value from `${CLUSTER_DOMAIN}` variable)
+**If you downloaded the Gateway from the cluster (Step 1.0):**
+- The hostname already has your cluster domain configured correctly
+- You only need to **add `${PROJECT_NAME}`** to the `values` array in the `allowedRoutes` section
 
-**Note:** If you need to add additional namespaces to the allowed routes, you can add them to the `values` array in the `allowedRoutes` section. This is important if you plan to deploy models in multiple namespaces.
+**If you're using the template file (Gateway doesn't exist yet):**
+- **Replace `<YOUR_PROJECT_NAME>`** with `${PROJECT_NAME}` (the value you set in the environment variables)
+- **Replace `<CLUSTER_DOMAIN>`** with `${CLUSTER_DOMAIN}` (the value you set in the environment variables)
 
-**Example:** To allow multiple namespaces (e.g., `user1`, `user2`, `ai-shared-project`), add them to the `values` array:
+**Adding your namespace to allowed routes:**
+
+Add `${PROJECT_NAME}` to the `values` array in the `allowedRoutes` section. This is important to allow your namespace to create HTTPRoutes for your model deployments.
+
+**Example:** Add your namespace (the value of `${PROJECT_NAME}`) to the `values` array. If `${PROJECT_NAME}` is set to `ai-shared-project`, your configuration should look like:
 ```yaml
 values:
   - openshift-ingress
   - redhat-ods-applications
-  - user1
-  - user2
-  - ai-shared-project
+  - ai-shared-project  # Replace with the actual value of ${PROJECT_NAME}
 ```
 
 **Security Note:** You can allow all namespaces by changing `from: Selector` to `from: All`, but this can be a security risk as it allows any namespace to create HTTPRoutes that could hijack or deny traffic.

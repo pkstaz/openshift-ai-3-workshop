@@ -11,17 +11,8 @@ export PROJECT_NAME="ai-shared-project"  # Replace with your actual project name
 
 ## Step 1: Create Your Project
 
-Create a new project for your model deployment. You can use either method:
+Create a new project for your model deployment:
 
-**Option A: Using the provided namespace YAML**
-
-Edit `deploy/00-initial-config/namespace.yaml` and replace `<YOUR_PROJECT_NAME>` with your project namespace, then apply:
-
-```bash
-oc apply -f deploy/00-initial-config/namespace.yaml
-```
-
-**Option B: Create project manually**
 ```bash
 oc new-project ${PROJECT_NAME}
 ```

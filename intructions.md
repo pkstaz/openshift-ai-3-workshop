@@ -49,7 +49,9 @@ Create the hardware profile for GPU-enabled model deployments:
 oc apply -f deploy/00-initial-config/hardware-profile.yaml
 ```
 
-**Note:** The hardware profile uses the `infrastructure.opendatahub.io/v1` API version. If you encounter deprecation warnings, ensure you're using the latest version of the file.
+**Note:** 
+- The hardware profile uses the `infrastructure.opendatahub.io/v1` API version.
+- If you see a warning about missing `kubectl.kubernetes.io/last-applied-configuration` annotation, this is expected and can be safely ignored. The annotation will be added automatically.
 
 ## Verification
 

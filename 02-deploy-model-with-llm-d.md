@@ -5,7 +5,6 @@
 Before starting this workshop, ensure you have:
 
 - Red Hat Build of Leader Worker Set Operator installed
-- Red Hat Connectivity Link (RHCL) Operator available
 - Cluster administrator privileges (all steps require cluster admin access)
 
 **⚠️ IMPORTANT:** The order of operations is critical. Follow the steps in sequence, otherwise you won't get access to the models.
@@ -23,6 +22,14 @@ export CLUSTER_DOMAIN=$(oc get ingresses.config/cluster -o jsonpath='{.spec.doma
 
 # Set your service name (you'll know this after creating the connection in Step 7)
 export SERVICE_NAME="gpt-oss-20b"        # Replace with your actual service name
+```
+
+**Verify your environment variables are set correctly:**
+
+```bash
+echo "PROJECT_NAME: $PROJECT_NAME"
+echo "CLUSTER_DOMAIN: $CLUSTER_DOMAIN"
+echo "SERVICE_NAME: $SERVICE_NAME"
 ```
 
 **Note:** You can set `SERVICE_NAME` later, after you know what name you'll use for your model deployment. For now, you can use a placeholder or set it when you reach Step 8.

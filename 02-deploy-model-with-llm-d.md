@@ -364,19 +364,22 @@ Once the model is deployed and the endpoint with HTTPRoutes is created, you can 
 
 First, export the appropriate environment variables:
 
+Get the base endpoint of your model from the LLMInferenceService status
 ```bash
-# Get the base endpoint of your model from the LLMInferenceService status
 export MODEL_ENDPOINT=$(oc get llminferenceservice ${SERVICE_NAME} -n ${PROJECT_NAME} -o jsonpath='{.status.url}')
-
-# Or if you prefer to construct it manually (note: CLUSTER_DOMAIN already includes "apps.")
+```
+Or if you prefer to construct it manually (note: CLUSTER_DOMAIN already includes "apps.")
+```bash
 export CLUSTER_DOMAIN=$(oc get ingresses.config/cluster -o jsonpath='{.spec.domain}')
 export MODEL_ENDPOINT="https://inference-gateway.${CLUSTER_DOMAIN}/${PROJECT_NAME}/${SERVICE_NAME}"
-
-# Generate a valid token for authentication (required if AuthPolicy is enabled)
+```
+Generate a valid token for authentication (required if AuthPolicy is enabled)
+```bash
 # Use your user token to have the correct permissions
 export TOKEN=$(oc whoami -t)
-
-# Or if you prefer to generate a token with specific duration:
+```
+Or if you prefer to generate a token with specific duration:
+```bash
 # export TOKEN=$(oc create token $(oc whoami) --duration=1h)
 ```
 

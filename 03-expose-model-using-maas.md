@@ -88,7 +88,35 @@ oc get pods -n maas-api -w
 
 Press `Ctrl+C` once all pods are running.
 
-## Step 4: Adjust Audience Policy
+## Step 4: Configure Gateway AuthPolicy
+
+The `gateway-auth-policy` from Workshop 02 is applied to the Gateway used for LLM-D models. We need to ensure it doesn't interfere with MaaS routes. Update the `gateway-auth-policy` to only apply to the LLM-D Gateway:
+
+```bash
+oc patch authpolicy gateway-auth-policy -n openshift-ingress --type=json -p='
+[
+  {
+    "op": "replace",
+    "path": "/spec/targetRef/kind",
+    "value": "Gateway"
+  },
+  {
+    "op": "replace",
+    "path": "/spec/targetRef/name",
+    "value": "openshift-ai-inference"
+  }
+]'
+```
+
+**Note:** This ensures the `gateway-auth-policy` only applies to the `openshift-ai-inference` Gateway used for LLM-D models, and not to the `maas-default-gateway` used by MaaS.
+
+Verify the change:
+
+```bash
+oc get authpolicy gateway-auth-policy -n openshift-ingress -o jsonpath='{.spec.targetRef}' | jq .
+```
+
+## Step 5: Adjust Audience Policy for maas-api-auth-policy
 
 Adjust the AuthPolicy to include the correct Kubernetes audience:
 
@@ -121,7 +149,7 @@ Adjust the AuthPolicy to include the correct Kubernetes audience:
    oc get authpolicy maas-api-auth-policy -n maas-api -o yaml | grep -A 5 audiences
    ```
 
-## Step 5: Restart Required Pods
+## Step 6: Restart Required Pods
 
 Restart the following pods to ensure they pick up the new configuration:
 
@@ -146,7 +174,7 @@ oc get pods -n redhat-ods-applications | grep odh-model-controller
 oc get pods -n kuadrant-system | grep kuadrant-operator-controller-manager
 ```
 
-## Step 6: Test the Configuration
+## Step 7: Test the Configuration
 
 Test the MaaS API configuration by obtaining an authentication token:
 
@@ -176,6 +204,14 @@ Test the MaaS API configuration by obtaining an authentication token:
    ```
 
    **Note:** Save this token value, as you will need it to authenticate requests to your MaaS endpoints.
+
+   **Important Notes:**
+   - The URL may be displayed as "http" in some interfaces, but "https" access works correctly.
+   - All tokens you create are active (there's currently no way to revoke them).
+   - When you enable MaaS for a model served using LLM-D, the direct HTTPRoute to the model stays valid. This means:
+     - `https://maas.<domain>/maas-api/v1/models` leads to the MaaS Gateway Pod.
+     - `https://maas.<domain>/<namespace>/<model-id>/v1/models` leads to the LLM-D instance directly, **bypassing MaaS**.
+   - **Security Warning:** If you checked the MaaS checkbox but did not check "Require authentication", your endpoint is freely accessible, bypassing any Authentication Policies you may have in place on MaaS.
 
 4. **Verify the token was obtained successfully:**
 

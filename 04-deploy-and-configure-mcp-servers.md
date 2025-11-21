@@ -8,9 +8,10 @@ We'll create our first MCP server using Quarkus. This server will act as an inte
 
 Open a terminal, navigate to the main workshop directory and run the following command to generate the project with the necessary extensions:
 
+**Option 1: Using Maven (if you have Maven installed):**
+
 ```bash
-# If you don't have the Quarkus CLI installed, use the Maven wrapper as follows:
-./mvnw io.quarkus.platform:quarkus-maven-plugin:3.11.1:create \
+mvn io.quarkus.platform:quarkus-maven-plugin:3.11.1:create \
   -DprojectGroupId=dev.langchain4j.quarkus.workshop \
   -DprojectArtifactId=weather-mcp-server \
   -DprojectVersion=1.0-SNAPSHOT \
@@ -19,7 +20,7 @@ Open a terminal, navigate to the main workshop directory and run the following c
 cd weather-mcp-server
 ```
 
-Or, if you already have the Quarkus CLI installed:
+**Option 2: Using Quarkus CLI (if you have it installed):**
 
 ```bash
 quarkus create app dev.langchain4j.quarkus.workshop:weather-mcp-server:1.0-SNAPSHOT \
@@ -28,6 +29,16 @@ quarkus create app dev.langchain4j.quarkus.workshop:weather-mcp-server:1.0-SNAPS
 
 cd weather-mcp-server
 ```
+
+**Verify the project was created:**
+
+After running the command, verify that the `weather-mcp-server` directory was created and contains the project structure:
+
+```bash
+ls -la weather-mcp-server
+```
+
+You should see directories like `src`, `pom.xml`, and `mvnw` (Maven wrapper) inside the `weather-mcp-server` directory.
 
 This command creates a new Quarkus application called `weather-mcp-server` in version `1.0-SNAPSHOT` and adds two key extensions:
 

@@ -66,6 +66,13 @@ oc get gateway -n openshift-ingress
 
 ## Step 2: Install Leader Worker Set Operator
 
+The Leader Worker Set Operator is required for LLM Deployments (LLM-D) to function properly. This operator enables distributed inference by managing leader and worker pods that work together to serve large language models efficiently across multiple nodes.
+
+**Why is it needed?**
+- **Distributed Inference**: LLM-D uses a leader-worker architecture where one leader pod coordinates inference requests across multiple worker pods
+- **Scalability**: Allows you to scale model inference horizontally by adding more worker pods
+- **Resource Optimization**: Distributes the computational load of large models across multiple GPUs and nodes
+
 Install the LeaderWorkerSet Operator and create an operator instance:
 
 ```bash
@@ -75,8 +82,10 @@ oc apply -f deploy/02-llm-d/leader-worker-set-operator.yaml
 Verify the operator is running:
 
 ```bash
-oc get pods -n openshift-operators | grep leader-worker
+oc get pods -n openshift-lws-operator
 ```
+
+You should see pods related to the Leader Worker Set Operator. If no pods appear immediately, wait a few moments for the operator to be deployed and then check again.
 
 ## Step 3: Create Kuadrant System Namespace
 

@@ -196,6 +196,35 @@ Test the MaaS API configuration by obtaining an authentication token:
      "${HOST}/maas-api/v1/tokens")
    ```
 
+   **Note:** If you encounter a "Could not resolve host" error, this is a DNS resolution issue from your local machine. You can resolve it by:
+
+   - **Option 1:** Add an entry to `/etc/hosts` (replace with the actual IP from your cluster):
+     ```bash
+     # Get the Gateway IP
+     GATEWAY_IP=$(oc get gateway maas-default-gateway -n openshift-ingress -o jsonpath='{.status.addresses[0].value}' | nslookup | grep -A 1 "Name:" | tail -1 | awk '{print $2}')
+     echo "$GATEWAY_IP maas.${CLUSTER_DOMAIN}" | sudo tee -a /etc/hosts
+     ```
+
+   - **Option 2:** Use the IP directly with the Host header:
+     ```bash
+     GATEWAY_IP=$(oc get gateway maas-default-gateway -n openshift-ingress -o jsonpath='{.status.addresses[0].value}' | nslookup | grep -A 1 "Name:" | tail -1 | awk '{print $2}')
+     TOKEN_RESPONSE=$(curl -sSk \
+       -H "Host: maas.${CLUSTER_DOMAIN}" \
+       -H "Authorization: Bearer $(oc whoami -t)" \
+       -H "Content-Type: application/json" \
+       -X POST \
+       -d '{"expiration": "10m"}' \
+       "https://${GATEWAY_IP}/maas-api/v1/tokens")
+     ```
+
+   - **Option 3:** Test from within the cluster (this always works):
+     ```bash
+     oc run test-maas-token --image=curlimages/curl:latest --rm -i --restart=Never -- \
+       curl -sSk -H "Authorization: Bearer $(oc create token default --duration=10m 2>/dev/null)" \
+       -H "Content-Type: application/json" -X POST -d '{"expiration": "10m"}' \
+       "https://maas.${CLUSTER_DOMAIN}/maas-api/v1/tokens"
+     ```
+
 3. **Extract the token from the response:**
 
    ```bash

@@ -105,6 +105,14 @@ oc new-project kuadrant-system
 
 ## Step 5: Create Kuadrant Instance
 
+Kuadrant is an API management solution for Kubernetes that provides authentication, authorization, and rate limiting capabilities. In the context of LLM-D, Kuadrant is used to secure and manage access to your deployed models through the Gateway API.
+
+**Why is it needed?**
+- **API Security**: Provides authentication and authorization for model endpoints, ensuring only authorized users can access your deployed models
+- **Traffic Management**: Enables rate limiting and traffic control to protect your models from being overwhelmed
+- **Gateway Integration**: Works seamlessly with the Gateway API to apply security policies at the network level
+- **OpenShift Integration**: Uses OpenShift's built-in authentication mechanisms (like ServiceAccount tokens) for seamless integration
+
 ### 5.1 Create Kuadrant Instance
 
 Create a Kuadrant instance:
@@ -120,6 +128,14 @@ oc get kuadrant -n kuadrant-system
 ```
 
 ## Step 6: Configure Authorino Service
+
+Authorino is an authentication and authorization engine that works with Kuadrant to enforce security policies on your API endpoints. It handles the actual authentication logic, token validation, and authorization decisions for requests coming through the Gateway.
+
+**Why is it needed?**
+- **Authentication Engine**: Validates tokens and credentials for incoming requests to your model endpoints
+- **Authorization Logic**: Enforces access control policies defined in AuthPolicy resources
+- **TLS Security**: Provides secure communication through TLS certificates
+- **Integration with Kuadrant**: Works together with Kuadrant to provide a complete API security solution
 
 ### 6.1 Annotate Authorino Service
 
@@ -139,6 +155,8 @@ Update the Authorino object to enable SSL by applying the configuration:
 oc apply -f deploy/02-llm-d/authorino.yaml
 ```
 
+**Note:** If you see a warning about missing `kubectl.kubernetes.io/last-applied-configuration` annotation, this is expected and can be safely ignored. The annotation will be added automatically.
+
 The Authorino configuration includes TLS settings in the listener section. Verify the configuration:
 
 ```bash
@@ -154,8 +172,12 @@ oc get authorino -n kuadrant-system -o yaml
 
 ### 7.2 Configure Connection
 
+
 **Connection Type:**
 - Select: `URI - v1`
+
+**Connection name:**
+- Enter: `gpt-oss-20b`
 
 **Connection URI:**
 ```

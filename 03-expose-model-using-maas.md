@@ -205,9 +205,10 @@ Test the MaaS API configuration by obtaining an authentication token:
      echo "$GATEWAY_IP maas.${CLUSTER_DOMAIN}" | sudo tee -a /etc/hosts
      ```
 
-   - **Option 2:** Use the IP directly with the Host header (note: you may need to use `-k` flag to bypass SSL certificate validation since the certificate is issued for the hostname, not the IP):
+   - **Option 2:** Use the IP directly with the Host header (note: you must use `-k` flag to bypass SSL certificate validation since the certificate is issued for the hostname, not the IP):
      ```bash
-     GATEWAY_IP=$(oc get gateway maas-default-gateway -n openshift-ingress -o jsonpath='{.status.addresses[0].value}' | nslookup | grep -A 1 "Name:" | tail -1 | awk '{print $2}')
+     # Get the Gateway IP (you can also use the IPs from nslookup: 3.137.2.235 or 18.224.50.87)
+     GATEWAY_IP=$(nslookup $(oc get gateway maas-default-gateway -n openshift-ingress -o jsonpath='{.status.addresses[0].value}') 2>/dev/null | grep -A 1 "Name:" | tail -1 | awk '{print $2}')
      TOKEN_RESPONSE=$(curl -sk \
        -H "Host: maas.${CLUSTER_DOMAIN}" \
        -H "Authorization: Bearer $(oc whoami -t)" \

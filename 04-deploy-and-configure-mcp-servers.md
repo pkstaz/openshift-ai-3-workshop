@@ -120,6 +120,11 @@ quarkus.rest-client.logging.body-limit=50
 
 # Associates the "weatherclient" identifier to the external weather API endpoint (Open-Meteo):
 quarkus.rest-client."weatherclient".uri=https://api.open-meteo.com/
+
+# MCP client configuration.
+# Configure the transport type and URL for the MCP client to connect to the MCP server:
+quarkus.langchain4j.mcp.weather.transport-type=http
+quarkus.langchain4j.mcp.weather.url=http://localhost:8081/mcp/sse/
 ```
 
 ### Explanation of each property:
@@ -132,8 +137,13 @@ quarkus.rest-client."weatherclient".uri=https://api.open-meteo.com/
 - **quarkus.rest-client.follow-redirects**: The HTTP client will automatically follow redirects from the target server.
 - **quarkus.rest-client.logging.body-limit**: Limits the amount of request/response body data that will be shown in logs.
 - **quarkus.rest-client."weatherclient".uri**: Base URI of the Open-Meteo API service that we will consume from our `WeatherClient` client.
+- **quarkus.langchain4j.mcp.weather.transport-type**: Transport type for the MCP client connection (http for Server-Sent Events).
+- **quarkus.langchain4j.mcp.weather.url**: URL where the MCP server is running. This should point to the SSE endpoint of your MCP server.
 
-> **Important:** The name `"weatherclient"` must match the `configKey` you defined in your REST client interface, so that Quarkus associates this configuration correctly.
+> **Important:** 
+> - The name `"weatherclient"` must match the `configKey` you defined in your REST client interface, so that Quarkus associates this configuration correctly.
+> - The MCP client configuration uses `"weather"` as the identifier. Make sure this matches your MCP server configuration if you're using named configurations.
+> - Update the URL (`http://localhost:8081/mcp/sse/`) to match your actual MCP server deployment URL when deploying to OpenShift.
 
 With this file properly configured, your services and clients will work transparently following Quarkus and cloud development best practices.
 

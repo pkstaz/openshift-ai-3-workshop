@@ -53,9 +53,12 @@ rm -rf src/test
 
 # Remove the default GreetingResource.java file
 rm src/main/java/dev/langchain4j/quarkus/workshop/GreetingResource.java
+
+# Clean Maven build cache to remove any compiled test classes
+./mvnw clean
 ```
 
-This will prevent build failures from default tests and unused resources. Once cleaned up, the project will be ready to add the logic that queries an external weather service and exposes it as an MCP endpoint.
+This will prevent build failures from default tests and unused resources. The `./mvnw clean` command removes the `target` directory, which may contain compiled test classes from previous builds. Once cleaned up, the project will be ready to add the logic that queries an external weather service and exposes it as an MCP endpoint.
 
 ### 2. Create the Weather REST Client
 
@@ -152,7 +155,8 @@ quarkus.mcp.server.server-info.name=Weather Service
 # Enable logging of request and response traffic to the MCP service,
 # useful for debugging and monitoring what data passes through the server:
 quarkus.mcp.server.traffic-logging.enabled=true
-quarkus.mcp.server.traffic-logging.text-limit=100  # Limits the amount of text shown in logs for each message
+# Limits the amount of text shown in logs for each message
+quarkus.mcp.server.traffic-logging.text-limit=100
 
 # REST client configuration (WeatherClient).
 # This section allows monitoring and customizing external HTTP calls.
@@ -172,6 +176,10 @@ quarkus.rest-client."weatherclient".uri=https://api.open-meteo.com/
 # Configure the transport type and URL for the MCP client to connect to the MCP server:
 quarkus.langchain4j.mcp.weather.transport-type=http
 quarkus.langchain4j.mcp.weather.url=http://localhost:8081/mcp/sse/
+
+# OpenShift configuration.
+# Expose the application as a Route in OpenShift:
+quarkus.openshift.route.expose=true
 ```
 
 ### Explanation of each property:
@@ -186,6 +194,7 @@ quarkus.langchain4j.mcp.weather.url=http://localhost:8081/mcp/sse/
 - **quarkus.rest-client."weatherclient".uri**: Base URI of the Open-Meteo API service that we will consume from our `WeatherClient` client.
 - **quarkus.langchain4j.mcp.weather.transport-type**: Transport type for the MCP client connection (http for Server-Sent Events).
 - **quarkus.langchain4j.mcp.weather.url**: URL where the MCP server is running. This should point to the SSE endpoint of your MCP server.
+- **quarkus.openshift.route.expose**: When set to `true`, automatically creates an OpenShift Route to expose the application externally.
 
 > **Important:** 
 > - The name `"weatherclient"` must match the `configKey` you defined in your REST client interface, so that Quarkus associates this configuration correctly.
@@ -207,6 +216,64 @@ To add the necessary extension for the MCP client in your Quarkus project, run t
 This will automatically add the dependency to the `pom.xml` file without needing to edit it manually.
 
 This dependency enables your main application to connect to and use MCP servers as clients, allowing you to leverage the MCP tools and capabilities from your Quarkus application.
+
+## Test the MCP Server with MCP Inspector
+
+Before deploying to OpenShift, you can test your MCP Server locally using [MCP Inspector](https://github.com/modelcontextprotocol/inspector), a visual testing tool for MCP servers. This allows you to verify that your server is working correctly and explore its capabilities.
+
+### Start the MCP Server Locally
+
+First, start your MCP Server in development mode:
+
+```bash
+./mvnw quarkus:dev
+```
+
+The server will start on `http://localhost:8081` and expose the MCP endpoint at `http://localhost:8081/mcp/sse/`.
+
+### Run MCP Inspector
+
+MCP Inspector can be run using either Docker or Podman. Choose the option that matches your environment:
+
+**Using Docker:**
+
+```bash
+docker run --rm --network host -p 6274:6274 -p 6277:6277 ghcr.io/modelcontextprotocol/inspector:latest
+```
+
+**Using Podman:**
+
+```bash
+podman run --rm --network host -p 6274:6274 -p 6277:6277 ghcr.io/modelcontextprotocol/inspector:latest
+```
+
+This command will:
+- Start the MCP Inspector container
+- Expose ports 6274 and 6277 for the web interface
+- Use host networking to allow the inspector to connect to your local MCP server
+
+### Connect to Your MCP Server
+
+Once the container is running, open your web browser and navigate to:
+
+```
+http://localhost:6274
+```
+
+From the MCP Inspector interface:
+
+1. Select **SSE (Server-Sent Events)** as the transport type
+2. Enter your MCP server URL: `http://localhost:8081/mcp/sse/`
+3. Click **Connect**
+
+You can now:
+- View available tools (like `getForecast`)
+- Test tool execution with different parameters
+- View server capabilities and resources
+- Debug MCP protocol interactions
+- Explore the request/response history
+
+This is a great way to verify that your MCP Server is working correctly and understand how it interacts with MCP clients before deploying it to OpenShift.
 
 ## Deploy MCP Server to OpenShift
 

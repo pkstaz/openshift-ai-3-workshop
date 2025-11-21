@@ -23,7 +23,7 @@ oc new-project ${PROJECT_NAME}
 
 1. Open the **OpenShift AI Console**
 2. Navigate to **AI Hub** → **Catalog** menu
-3. Browse and select the model you want to deploy
+3. In the catalog search bar, type "llama" and select "Llama-3.1-8B-Instruct" from the search results.
 
 ![Model Catalog](resources/images/01-model-catalog.png)
 
@@ -68,7 +68,12 @@ Check the following options:
 In the **Configuration parameters** section, under **Additional serving runtime arguments**, add:
 
 ```bash
---max-model-len=16384
+--dtype=half
+--max-model-len=20000
+--gpu-memory-utilization=0.95
+--enable-auto-tool-choice
+--tool-call-parser=llama3_json
+--chat-template=/opt/app-root/template/tool_chat_template_llama3.1_json.jinja
 ```
 
 ![Runtime Arguments](resources/images/01-runtime-arg.png)

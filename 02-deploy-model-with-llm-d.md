@@ -49,12 +49,14 @@ Before applying the Gateway, edit `deploy/02-llm-d/gateway.yaml` and replace the
 
 ### 1.2 Apply Gateway Resources
 
-As a cluster administrator, create the GatewayClass and Gateway:
+Create the GatewayClass and Gateway:
 
 ```bash
 oc apply -f deploy/02-llm-d/gateway-class.yaml
 oc apply -f deploy/02-llm-d/gateway.yaml
 ```
+
+**Note:** If you see warnings about missing `kubectl.kubernetes.io/last-applied-configuration` annotation, this is expected and can be safely ignored. The annotation will be added automatically.
 
 Verify the Gateway was created:
 

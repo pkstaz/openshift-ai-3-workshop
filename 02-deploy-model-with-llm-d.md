@@ -343,9 +343,9 @@ In the **Advanced settings** section of the **Deploy Model** wizard:
 - Enable **Add as AI asset endpoint** by checking the checkbox.  
   This allows your deployed model to be used as an AI asset in the AI app development playground.
 
-- **Require token authentication** (optional):  
+- **Require token authentication**:  
   This option requires a valid authentication token to access your deployed model via the endpoint.  
-  **⚠️ For this workshop, do NOT enable this option.** Leave this checkbox unchecked.
+  **✅ For this workshop, make sure to enable this option.** Check this checkbox to require users to authenticate when accessing your model.
 
 **⚠️ IMPORTANT:** Do NOT add vLLM arguments to your configuration. Adding vLLM arguments will break the deployment due to a known bug (RHOAIENG-38896). Leave the configuration parameters section empty or use only the default values.
 

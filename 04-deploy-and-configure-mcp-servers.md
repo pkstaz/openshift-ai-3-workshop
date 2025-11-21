@@ -9,6 +9,16 @@ We'll create our first MCP server using Quarkus. This server will act as an inte
 Open a terminal, navigate to the main workshop directory and run the following command to generate the project with the necessary extensions:
 
 ```bash
+# If you don't have the Quarkus CLI installed, use the Maven wrapper as follows:
+./mvnw io.quarkus.platform:quarkus-maven-plugin:3.11.1:create \
+  -DprojectGroupId=dev.langchain4j.quarkus.workshop \
+  -DprojectArtifactId=weather-mcp-server \
+  -DprojectVersion=1.0-SNAPSHOT \
+  -Dextensions="quarkus-mcp-server-sse,quarkus-rest-client-jackson"
+```
+Or, if you already have the Quarkus CLI installed:
+
+```bash
 quarkus create app dev.langchain4j.quarkus.workshop:weather-mcp-server:1.0-SNAPSHOT \
   -x quarkus-mcp-server-sse \
   -x quarkus-rest-client-jackson
@@ -170,6 +180,7 @@ To deploy the MCP Server to OpenShift, we need to add the OpenShift extension an
 First, add the OpenShift extension to your MCP Server project. Navigate to the `weather-mcp-server` directory and run:
 
 ```bash
+cd weather-mcp-server
 ./mvnw quarkus:add-extension -Dextensions="io.quarkus:quarkus-openshift"
 ```
 

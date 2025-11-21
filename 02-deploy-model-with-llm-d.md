@@ -43,7 +43,17 @@ Before applying the Gateway, edit `deploy/02-llm-d/gateway.yaml` and replace the
 1. **Replace `<YOUR_PROJECT_NAME>`** with your project namespace (e.g., `ai-shared-project`)
 2. **Replace `<CLUSTER_DOMAIN>`** with your cluster domain (use the value from `${CLUSTER_DOMAIN}` variable)
 
-**Note:** If you need to add additional namespaces to the allowed routes, you can add them to the `values` array in the `allowedRoutes` section.
+**Note:** If you need to add additional namespaces to the allowed routes, you can add them to the `values` array in the `allowedRoutes` section. This is important if you plan to deploy models in multiple namespaces.
+
+**Example:** To allow multiple namespaces (e.g., `user1`, `user2`, `ai-shared-project`), add them to the `values` array:
+```yaml
+values:
+  - openshift-ingress
+  - redhat-ods-applications
+  - user1
+  - user2
+  - ai-shared-project
+```
 
 **Security Note:** You can allow all namespaces by changing `from: Selector` to `from: All`, but this can be a security risk as it allows any namespace to create HTTPRoutes that could hijack or deny traffic.
 
@@ -97,11 +107,33 @@ oc new-project kuadrant-system
 
 ## Step 4: Install Red Hat Connectivity Link (RHCL) Operator
 
-**⚠️ IMPORTANT:** The RHCL Operator must be installed in the `kuadrant-system` namespace, not any other namespace. It will automatically install all other required operators in this namespace.
+**⚠️ CRITICAL:** The RHCL Operator **MUST** be installed in the `kuadrant-system` namespace. In RHOAI 3.0, this namespace is hard-coded, and installing RHCL in any other namespace will cause failures. RHCL will automatically install all other required operators (Authorino, ServiceMesh, DNS, Limitador) in this namespace.
 
 1. Navigate to **Operator Hub** in the OpenShift Console
 2. Search for "Red Hat Connectivity Link" or "RHCL"
 3. Install the operator in the `kuadrant-system` namespace
+
+**Note:** If you encounter "Internal Server Error" after deploying models or creating Kuadrant, it may be because RHCL was installed in the wrong namespace. The solution is to redeploy RHCL in the `kuadrant-system` namespace.
+
+### 4.1 Restart Controllers After RHCL Installation
+
+After installing RHCL, restart the following controllers to ensure they pick up the new configuration:
+
+```bash
+# Restart kserve-controller-manager
+oc rollout restart deployment/kserve-controller-manager -n redhat-ods-applications
+oc rollout status deployment/kserve-controller-manager -n redhat-ods-applications --timeout=120s
+
+# Restart odh-model-controller
+oc rollout restart deployment/odh-model-controller -n redhat-ods-applications
+oc rollout status deployment/odh-model-controller -n redhat-ods-applications --timeout=120s
+```
+
+Verify both controllers are running:
+
+```bash
+oc get pods -n redhat-ods-applications | grep -E "kserve-controller-manager|odh-model-controller"
+```
 
 ## Step 5: Create Kuadrant Instance
 
@@ -126,6 +158,25 @@ Verify the Kuadrant instance is created:
 ```bash
 oc get kuadrant -n kuadrant-system
 ```
+
+**⚠️ TROUBLESHOOTING:** If you encounter "Internal Server Error" (HTTP 500) when calling your model endpoint after creating Kuadrant, this is a known issue. The problem occurs when RHCL was not deployed in the `kuadrant-system` namespace. In RHOAI 3.0, this namespace is hard-coded and RHCL must be in this namespace.
+
+**Solution:**
+1. Verify RHCL is installed in `kuadrant-system`:
+   ```bash
+   oc get subscription -n kuadrant-system | grep -i rhcl
+   ```
+
+2. If RHCL is not in `kuadrant-system`, you need to:
+   - Uninstall RHCL from its current namespace
+   - Reinstall RHCL in the `kuadrant-system` namespace
+   - Restart the controllers (as shown in Step 4.1)
+
+3. After fixing RHCL, restart Kuadrant:
+   ```bash
+   oc delete kuadrant kuadrant -n kuadrant-system
+   oc apply -f deploy/02-llm-d/kuadrant.yaml
+   ```
 
 ## Step 6: Configure Authorino Service
 
@@ -235,7 +286,11 @@ In the **Advanced settings** section of the **Deploy Model** wizard:
   This option requires a valid authentication token to access your deployed model via the endpoint.  
   **⚠️ For this workshop, do NOT enable this option.** Leave this checkbox unchecked.
 
+**⚠️ IMPORTANT:** Do NOT add vLLM arguments to your configuration. Adding vLLM arguments will break the deployment due to a known bug (RHOAIENG-38896). Leave the configuration parameters section empty or use only the default values.
+
 After configuring these options, click **Deploy model** to initiate the deployment.
+
+**Note:** The UI may show "Failed" initially, but the deployment is proceeding in the background. Wait for the deployment to complete and eventually it will be tagged as "Started".
 
 ![Advanced Settings](resources/images/02-advanced-settings.png)
 

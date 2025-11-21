@@ -9,6 +9,8 @@ Before starting this workshop, ensure you have:
 - Access to the OpenShift AI Console
 - Project namespace with appropriate permissions
 
+**⚠️ IMPORTANT:** MaaS must be enabled in the `OdhDashboardConfig` custom resource. If MaaS is not available in the dashboard, you need to enable it first (see Step 0 below).
+
 ## Set Environment Variables
 
 Before starting, set the following environment variables to simplify the commands throughout this workshop:
@@ -31,6 +33,39 @@ echo "PROJECT_NAME: $PROJECT_NAME"
 echo "CLUSTER_DOMAIN: $CLUSTER_DOMAIN"
 echo "SERVICE_NAME: $SERVICE_NAME"
 ```
+
+## Step 0: Enable MaaS in Dashboard Configuration (if not already enabled)
+
+If MaaS is not available in the OpenShift AI dashboard, you need to enable it in the `OdhDashboardConfig` custom resource:
+
+1. **Edit the OdhDashboardConfig:**
+
+   ```bash
+   oc edit odhdashboardconfig odh-dashboard-config -n redhat-ods-applications
+   ```
+
+2. **Add or update the `modelAsService` field in the `spec.dashboardConfig` section:**
+
+   ```yaml
+   spec:
+     dashboardConfig:
+       modelAsService: true
+   ```
+
+3. **Restart the dashboard deployment to ensure the changes take effect:**
+
+   ```bash
+   oc rollout restart deployment/rhods-dashboard -n redhat-ods-applications
+   oc rollout status deployment/rhods-dashboard -n redhat-ods-applications --timeout=120s
+   ```
+
+4. **Verify the dashboard is running:**
+
+   ```bash
+   oc get pods -n redhat-ods-applications | grep rhods-dashboard
+   ```
+
+**Note:** After enabling MaaS, refresh your browser and you should see the MaaS option available in the dashboard.
 
 ## Step 1: Create GatewayClass
 

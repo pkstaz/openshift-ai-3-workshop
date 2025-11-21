@@ -112,12 +112,14 @@ Deploy the MaaS API components using the official deployment overlay:
 ```bash
 export CLUSTER_DOMAIN=$(oc get ingresses.config.openshift.io cluster -o jsonpath='{.spec.domain}')
 
-oc apply --server-side=true \
+oc apply --server-side=true --force-conflicts \
   -f <(kustomize build "https://github.com/opendatahub-io/maas-billing.git/deployment/overlays/openshift?ref=main" | \
        envsubst '$CLUSTER_DOMAIN')
 ```
 
 **Note:** This command uses kustomize to build the deployment manifests from the official MaaS billing repository. The source for installation instructions can be found at: https://opendatahub-io.github.io/maas-billing/latest/quickstart/
+
+**⚠️ IMPORTANT:** The `--force-conflicts` flag is required because the MaaS deployment may try to modify the `gateway-auth-policy` that was configured in Workshop 02. This is expected and safe - the conflicts will be resolved by forcing the server-side apply.
 
 **Alternative:** If you prefer an automated deployment, you can use the official deployment script from the [MaaS billing repository](https://github.com/opendatahub-io/maas-billing):
 ```bash
@@ -181,7 +183,9 @@ The deployment creates several core resources. Verify they were created successf
 
 ## Step 4: Configure Gateway AuthPolicy
 
-The `gateway-auth-policy` from Workshop 02 is applied to the Gateway used for LLM-D models. We need to ensure it doesn't interfere with MaaS routes. Update the `gateway-auth-policy` to only apply to the LLM-D Gateway:
+**⚠️ IMPORTANT:** After deploying MaaS in Step 3, the `gateway-auth-policy` may have been modified by the MaaS deployment. We need to ensure it only applies to the LLM-D Gateway (`openshift-ai-inference`) and not to the MaaS Gateway (`maas-default-gateway`).
+
+The `gateway-auth-policy` from Workshop 02 is applied to the Gateway used for LLM-D models. Update the `gateway-auth-policy` to only apply to the LLM-D Gateway:
 
 ```bash
 oc patch authpolicy gateway-auth-policy -n openshift-ingress --type=json -p='
@@ -206,6 +210,8 @@ Verify the change:
 ```bash
 oc get authpolicy gateway-auth-policy -n openshift-ingress -o jsonpath='{.spec.targetRef}' | jq .
 ```
+
+**Note:** If you see conflicts when applying the MaaS deployment in Step 3, this is expected. The MaaS deployment may try to modify the `gateway-auth-policy`, but we need to keep it pointing to `openshift-ai-inference` only. The `--force-conflicts` flag in Step 3 handles this, and this step (Step 4) ensures the final configuration is correct.
 
 ## Step 5: Adjust Audience Policy for maas-api-auth-policy
 

@@ -24,6 +24,14 @@ export CLUSTER_DOMAIN=$(oc get ingresses.config/cluster -o jsonpath='{.spec.doma
 export SERVICE_NAME="gpt-oss-20b"        # Replace with your actual service name
 ```
 
+**Verify your environment variables are set correctly:**
+
+```bash
+echo "PROJECT_NAME: $PROJECT_NAME"
+echo "CLUSTER_DOMAIN: $CLUSTER_DOMAIN"
+echo "SERVICE_NAME: $SERVICE_NAME"
+```
+
 ## Step 1: Create GatewayClass
 
 Create the GatewayClass `openshift-default` that will be used for the MaaS gateway:
